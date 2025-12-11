@@ -247,7 +247,7 @@ class ChatbotService {
 
 YOUR PERSONALITY:
 - Warm, helpful, and enthusiastic about food
-- Concise but informative (keep responses under 100 words)
+- Concise but informative (keep responses under 150 words)
 - Use emojis sparingly (max 2-3 per message)
 - Always mention prices in ₹ (Indian Rupees)
 
@@ -261,9 +261,10 @@ YOUR CAPABILITIES:
 1. Help users explore the menu and find dishes
 2. Recommend items based on preferences (spicy, vegetarian, budget, etc.)
 3. Answer questions about ingredients, prices, and categories
-4. Help with order tracking (tell them to ask "track my order")
-5. Suggest popular items and combinations
-6. When recommending items, mention you can show them as cards
+4. Track active orders and show order status
+5. **IMPORTANT: Answer questions about past/delivered orders from the ORDER HISTORY above**
+6. Suggest popular items and combinations
+7. When recommending items, mention you can show them as cards
 
 SPECIAL COMMANDS (recognize these intents):
 - If user wants to see menu items visually, respond with: [SHOW_MENU_CARDS]
@@ -271,12 +272,19 @@ SPECIAL COMMANDS (recognize these intents):
 - If user asks for items under a price, include: [SHOW_UNDER_PRICE:amount]
 - If user wants to add item to cart, include: [ADD_TO_CART:item_name]
 
+HANDLING ORDER HISTORY QUESTIONS:
+- When user asks about "last order", "previous orders", "what I ordered", "delivered items", "order history":
+  Use the ORDER HISTORY data above to answer
+- Include order dates, item names, amounts, and status
+- If no order history exists, politely say they haven't placed orders yet
+
 RULES:
 - If a dish isn't on our menu, politely say it's unavailable and suggest alternatives
 - For order issues or complaints, suggest contacting customer support
 - Don't make up dishes or prices - only use menu items provided
 - If unsure, ask clarifying questions
 - Keep responses friendly and appetizing!
+- **ALWAYS use the context provided above to answer user questions**
 
 Remember: You're here to help customers have a great ordering experience!`;
     }
@@ -408,8 +416,32 @@ Remember: You're here to help customers have a great ordering experience!`;
         let menuCards = null;
 
         try {
-            // Handle common intents without AI
-            if (message.includes("menu") || message.includes("food") || message.includes("show")) {
+            // Handle order history and past order queries FIRST (higher priority)
+            if (message.includes("last") && (message.includes("order") || message.includes("deliver"))) {
+                response = await this.getUserOrderHistory(userId);
+                if (response === "No previous orders found.") {
+                    response = "You haven't placed any orders yet! 🛒 Would you like to explore our menu and place your first order?";
+                } else {
+                    response = "Here are your recent orders! 📦\n\n" + response;
+                }
+            } else if (message.includes("order history") || message.includes("previous order") ||
+                message.includes("past order") || message.includes("my order")) {
+                response = await this.getUserOrderHistory(userId);
+                if (response === "No previous orders found.") {
+                    response = "You haven't placed any orders yet! 🛒 Would you like to explore our menu?";
+                } else {
+                    response = "📜 Your Order History:\n\n" + response;
+                }
+            } else if (message.includes("delivered") || message.includes("what i ordered")) {
+                response = await this.getUserOrderHistory(userId);
+                if (response === "No previous orders found.") {
+                    response = "You don't have any delivered orders yet. Let's fix that! 🍕 Check out our menu.";
+                } else {
+                    response = "Here's what you've ordered before:\n\n" + response;
+                }
+            }
+            // Handle menu queries
+            else if (message.includes("menu") || message.includes("food") || message.includes("show")) {
                 const result = await this.getMenuCards({ limit: 6 });
                 menuCards = result.items;
                 response = "Here's our delicious menu! 🍽️ Click on any item to add it to your cart.";
@@ -417,7 +449,7 @@ Remember: You're here to help customers have a great ordering experience!`;
                 const result = await this.getMenuCards({ search: "salad", limit: 6 });
                 menuCards = result.items;
                 response = "Here are some great vegetarian options for you! 🥗";
-            } else if (message.includes("track") || message.includes("order")) {
+            } else if (message.includes("track")) {
                 const trackResult = await this.trackOrder(userId);
                 response = trackResult.message;
             } else if (message.includes("cheap") || message.includes("budget") || message.includes("under")) {
@@ -431,9 +463,9 @@ Remember: You're here to help customers have a great ordering experience!`;
                 menuCards = result.items;
                 response = "Here are our most popular items! ⭐ Customers love these!";
             } else if (message.includes("hello") || message.includes("hi") || message.includes("hey")) {
-                response = "Hello! 👋 Welcome to TOMATO! I'm here to help you find delicious food. Try asking me about our menu, popular items, or vegetarian options!";
+                response = "Hello! 👋 Welcome to TOMATO! I'm here to help you find delicious food. Try asking me about our menu, popular items, or your order history!";
             } else {
-                response = "I'd love to help you! 🍅 You can ask me to:\n• Show the menu\n• Find vegetarian options\n• See popular items\n• Track your order\n• Find items under a specific price";
+                response = "I'd love to help you! 🍅 You can ask me to:\n• Show the menu\n• Find vegetarian options\n• See popular items\n• Track your order\n• Show my last order\n• View order history\n• Find items under a specific price";
             }
 
             return {

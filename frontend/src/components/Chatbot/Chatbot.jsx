@@ -114,10 +114,20 @@ const Chatbot = () => {
             }
         } catch (error) {
             console.error("Chat error:", error);
+            let errorContent = "I'm having trouble connecting. Please check your internet and try again! 🔄";
+
+            // More specific error messages
+            if (error.response?.status === 401) {
+                errorContent = "Please login first to use the chatbot! 🔐";
+            } else if (error.response?.status === 429) {
+                errorContent = "Too many messages! Please wait a moment and try again. ⏳";
+            } else if (error.response?.data?.message) {
+                errorContent = error.response.data.message;
+            }
+
             const errorMessage = {
                 role: "assistant",
-                content:
-                    "I'm having trouble connecting. Please check your internet and try again! 🔄",
+                content: errorContent,
                 timestamp: new Date(),
             };
             setMessages((prev) => [...prev, errorMessage]);

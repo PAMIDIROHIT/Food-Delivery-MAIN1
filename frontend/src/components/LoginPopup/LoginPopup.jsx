@@ -4,9 +4,10 @@ import { assets } from "../../assets/frontend_assets/assets";
 import { StoreContext } from "../../context/StoreContext";
 import axios from "axios";
 import { toast } from "react-toastify";
+import SocialLogin from "../Auth/SocialLogin";
 
 const LoginPopup = ({ setShowLogin }) => {
-  const {url, setToken } = useContext(StoreContext);
+  const { url, setToken } = useContext(StoreContext);
   const [currentState, setCurrentState] = useState("Login");
   const [data, setData] = useState({
     name: "",
@@ -22,20 +23,25 @@ const LoginPopup = ({ setShowLogin }) => {
 
   const onLogin = async (event) => {
     event.preventDefault();
-    let newUrl = url;
-    if (currentState === "Login") {
-      newUrl += "/api/user/login";
-    } else {
-      newUrl += "/api/user/register";
-    }
-    const response = await axios.post(newUrl, data);
-    if (response.data.success) {
-      setToken(response.data.token);
-      localStorage.setItem("token", response.data.token);
-      toast.success("Login Successfully")
-      setShowLogin(false);
-    }else{
-      toast.error(response.data.message);
+    try {
+      let newUrl = url;
+      if (currentState === "Login") {
+        newUrl += "/api/user/login";
+      } else {
+        newUrl += "/api/user/register";
+      }
+      const response = await axios.post(newUrl, data);
+      if (response.data.success) {
+        setToken(response.data.token);
+        localStorage.setItem("token", response.data.token);
+        toast.success("Login Successfully");
+        setShowLogin(false);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error(error.response?.data?.message || "Login failed. Please check your credentials.");
     }
   };
   return (
@@ -82,6 +88,10 @@ const LoginPopup = ({ setShowLogin }) => {
         <button type="submit">
           {currentState === "Sign Up" ? "Create Account" : "Login"}
         </button>
+
+        {/* Google OAuth Login */}
+        <SocialLogin />
+
         <div className="login-popup-condition">
           <input type="checkbox" required />
           <p>By continuing, i agree to the terms of use & privacy policy.</p>
@@ -103,3 +113,4 @@ const LoginPopup = ({ setShowLogin }) => {
 };
 
 export default LoginPopup;
+
