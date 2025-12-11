@@ -28,8 +28,8 @@ export const sendMessage = async (req, res) => {
             conversation = new conversationModel({ userId, messages: [] });
         }
 
-        // Get conversation history for context
-        const conversationHistory = conversation.messages.map((msg) => ({
+        // Get conversation history for context (last 10 messages)
+        const conversationHistory = conversation.messages.slice(-10).map((msg) => ({
             role: msg.role,
             content: msg.content,
         }));
@@ -47,7 +47,7 @@ export const sendMessage = async (req, res) => {
             content: message.trim(),
         });
 
-        // Save bot response
+        // Save bot response (text only, not menu cards)
         conversation.messages.push({
             role: "assistant",
             content: response.message,
@@ -55,10 +55,14 @@ export const sendMessage = async (req, res) => {
 
         await conversation.save();
 
+        // Return response with menu cards if available
         res.json({
             success: true,
             message: response.message,
+            menuCards: response.menuCards || null,
+            addToCart: response.addToCart || null,
             timestamp: response.timestamp,
+            isFallback: response.isFallback || false,
         });
     } catch (error) {
         console.error("Chatbot sendMessage error:", error);
@@ -143,6 +147,29 @@ export const trackOrder = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Could not track order",
+        });
+    }
+};
+
+// Get menu cards (for quick browsing)
+export const getMenuCards = async (req, res) => {
+    try {
+        const { category, maxPrice, minPrice, search, limit } = req.query;
+
+        const result = await chatbotService.getMenuCards({
+            category,
+            maxPrice: maxPrice ? parseInt(maxPrice) : null,
+            minPrice: minPrice ? parseInt(minPrice) : null,
+            search,
+            limit: limit ? parseInt(limit) : 10,
+        });
+
+        res.json(result);
+    } catch (error) {
+        console.error("Chatbot getMenuCards error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Could not fetch menu",
         });
     }
 };

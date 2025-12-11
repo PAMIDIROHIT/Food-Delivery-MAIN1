@@ -10,14 +10,16 @@ const Chatbot = () => {
     const [isTyping, setIsTyping] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
-    const { url, token } = useContext(StoreContext);
+    const { url, token, addToCart } = useContext(StoreContext);
 
-    // Quick action buttons
+    // Quick action buttons - thinking like a customer
     const quickActions = [
-        { label: "📋 View Menu", prompt: "Show me your complete menu" },
-        { label: "⭐ Popular Items", prompt: "What are your most popular dishes?" },
+        { label: "🍽️ See Menu", prompt: "Show me your complete menu" },
+        { label: "⭐ Popular", prompt: "What are your most popular dishes?" },
         { label: "🥗 Vegetarian", prompt: "Show me vegetarian options" },
+        { label: "💰 Budget", prompt: "Show me items under 200 rupees" },
         { label: "📦 Track Order", prompt: "Track my order" },
+        { label: "🌶️ Spicy", prompt: "Show me spicy food options" },
     ];
 
     // Scroll to bottom when messages update
@@ -53,6 +55,22 @@ const Chatbot = () => {
         }
     };
 
+    // Handle adding item to cart
+    const handleAddToCart = async (item) => {
+        try {
+            await addToCart(item._id);
+            // Add a bot message confirming the addition
+            const confirmMessage = {
+                role: "assistant",
+                content: `Added ${item.name} to your cart! 🛒`,
+                timestamp: new Date(),
+            };
+            setMessages((prev) => [...prev, confirmMessage]);
+        } catch (error) {
+            console.error("Failed to add to cart:", error);
+        }
+    };
+
     // Send message to chatbot
     const sendMessage = async (text) => {
         if (!text.trim() || isTyping) return;
@@ -80,6 +98,7 @@ const Chatbot = () => {
                     role: "assistant",
                     content: response.data.message,
                     timestamp: response.data.timestamp,
+                    menuCards: response.data.menuCards || null,
                 };
                 setMessages((prev) => [...prev, botMessage]);
             } else {
@@ -132,9 +151,32 @@ const Chatbot = () => {
 
     // Format timestamp
     const formatTime = (timestamp) => {
+        if (!timestamp) return "";
         const date = new Date(timestamp);
         return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     };
+
+    // Menu Card Component
+    const MenuCard = ({ item }) => (
+        <div className="menu-card">
+            <div className="menu-card-image">
+                <img src={`${url}/images/${item.image}`} alt={item.name} />
+            </div>
+            <div className="menu-card-content">
+                <h4>{item.name}</h4>
+                <p className="menu-card-desc">{item.description?.slice(0, 50)}...</p>
+                <div className="menu-card-footer">
+                    <span className="menu-card-price">₹{item.price}</span>
+                    <button
+                        className="menu-card-add"
+                        onClick={() => handleAddToCart(item)}
+                    >
+                        + Add
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 
     // Don't render if user is not logged in
     if (!token) {
@@ -162,7 +204,7 @@ const Chatbot = () => {
                             <div className="chatbot-header-text">
                                 <h3>TOMATO Assistant</h3>
                                 <span className="chatbot-status">
-                                    {isTyping ? "Typing..." : "Online"}
+                                    {isTyping ? "Typing..." : "Online • Ask me anything!"}
                                 </span>
                             </div>
                         </div>
@@ -178,17 +220,27 @@ const Chatbot = () => {
                     {/* Messages Area */}
                     <div className="chatbot-messages">
                         {isLoading ? (
-                            <div className="chatbot-loading">Loading conversation...</div>
+                            <div className="chatbot-loading">
+                                <div className="loading-spinner"></div>
+                                <span>Loading conversation...</span>
+                            </div>
                         ) : messages.length === 0 ? (
                             <div className="chatbot-welcome">
                                 <div className="welcome-icon">🍅</div>
                                 <h4>Welcome to TOMATO!</h4>
                                 <p>
-                                    I'm your food ordering assistant. Ask me about our menu,
-                                    recommendations, or track your orders!
+                                    I'm your personal food assistant. I can help you:
                                 </p>
+                                <ul className="welcome-features">
+                                    <li>🍽️ Browse our delicious menu</li>
+                                    <li>⭐ Find popular dishes</li>
+                                    <li>🥗 Discover vegetarian options</li>
+                                    <li>💰 Find budget-friendly meals</li>
+                                    <li>📦 Track your orders</li>
+                                    <li>🛒 Add items to cart instantly</li>
+                                </ul>
                                 <div className="quick-actions">
-                                    {quickActions.map((action, index) => (
+                                    {quickActions.slice(0, 4).map((action, index) => (
                                         <button
                                             key={index}
                                             className="quick-action-btn"
@@ -202,19 +254,31 @@ const Chatbot = () => {
                         ) : (
                             <>
                                 {messages.map((msg, index) => (
-                                    <div
-                                        key={index}
-                                        className={`chatbot-message ${msg.role === "user" ? "user" : "bot"}`}
-                                    >
-                                        {msg.role === "assistant" && (
-                                            <div className="message-avatar">🍅</div>
-                                        )}
-                                        <div className="message-content">
-                                            <div className="message-text">{msg.content}</div>
-                                            <div className="message-time">
-                                                {formatTime(msg.timestamp)}
+                                    <div key={index}>
+                                        <div
+                                            className={`chatbot-message ${msg.role === "user" ? "user" : "bot"}`}
+                                        >
+                                            {msg.role === "assistant" && (
+                                                <div className="message-avatar">🍅</div>
+                                            )}
+                                            <div className="message-content">
+                                                <div className="message-text">{msg.content}</div>
+                                                <div className="message-time">
+                                                    {formatTime(msg.timestamp)}
+                                                </div>
                                             </div>
                                         </div>
+
+                                        {/* Menu Cards Display */}
+                                        {msg.menuCards && msg.menuCards.length > 0 && (
+                                            <div className="menu-cards-container">
+                                                <div className="menu-cards-grid">
+                                                    {msg.menuCards.map((item) => (
+                                                        <MenuCard key={item._id} item={item} />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                                 {isTyping && (
@@ -234,7 +298,7 @@ const Chatbot = () => {
                         )}
                     </div>
 
-                    {/* Quick Actions (shown when there are messages) */}
+                    {/* Quick Actions Bar */}
                     {messages.length > 0 && (
                         <div className="chatbot-quick-actions">
                             {quickActions.map((action, index) => (
@@ -256,7 +320,7 @@ const Chatbot = () => {
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Type a message..."
+                            placeholder="Ask about menu, orders, or recommendations..."
                             disabled={isTyping}
                             className="chatbot-input"
                         />

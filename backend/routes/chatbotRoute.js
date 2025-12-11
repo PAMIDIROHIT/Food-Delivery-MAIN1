@@ -6,6 +6,7 @@ import {
     getHistory,
     clearHistory,
     trackOrder,
+    getMenuCards,
 } from "../controllers/chatbotController.js";
 
 const chatbotRouter = express.Router();
@@ -30,5 +31,6 @@ chatbotRouter.post("/message", chatLimiter, sendMessage);
 chatbotRouter.get("/history", getHistory);
 chatbotRouter.delete("/clear", clearHistory);
 chatbotRouter.get("/track-order", trackOrder);
+chatbotRouter.get("/menu-cards", getMenuCards);
 
 export default chatbotRouter;
