@@ -6,10 +6,11 @@ import userRouter from "./routes/userRoute.js";
 import "dotenv/config";
 import cartRouter from "./routes/cartRoute.js";
 import orderRouter from "./routes/orderRoute.js";
+import chatbotRouter from "./routes/chatbotRoute.js";
 
 // app config
 const app = express();
-const port =process.env.PORT || 4000;
+const port = process.env.PORT || 4000;
 
 //middlewares
 app.use(express.json());
@@ -24,6 +25,7 @@ app.use("/images", express.static("uploads"));
 app.use("/api/user", userRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/order", orderRouter);
+app.use("/api/chat", chatbotRouter);
 
 app.get("/", (req, res) => {
   res.send("API Working");
