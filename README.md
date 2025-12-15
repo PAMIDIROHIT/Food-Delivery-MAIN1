@@ -429,7 +429,7 @@ cd admin && npm run dev
 **PAMIDI ROHIT**
 
 [![GitHub](https://img.shields.io/badge/GitHub-PAMIDIROHIT-181717?style=for-the-badge&logo=github)](https://github.com/PAMIDIROHIT)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/pamidirohit)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/rohit-pamidi-4147771ba/)
 
 ---
 
